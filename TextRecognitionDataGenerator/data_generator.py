@@ -5,18 +5,17 @@ import random
 from PIL import Image, ImageFilter
 
 from computer_text_generator import ComputerTextGenerator
-try:
-    from handwritten_text_generator import HandwrittenTextGenerator
-except ImportError as e:
-    print('Missing modules for handwritten text generation.')
+# try:
+#     from .handwritten_text_generator import HandwrittenTextGenerator
+# except ImportError as e:
+#     print('Missing modules for handwritten text generation.')
 from background_generator import BackgroundGenerator
 from distorsion_generator import DistorsionGenerator
 
 class FakeTextDataGenerator(object):
+    
     @classmethod
-    def generate(cls, index, text, font, out_dir, height, extension, skewing_angle, random_skew, blur, random_blur, background_type, distorsion_type, distorsion_orientation, is_handwritten, name_format, text_color=-1):
-        image = None
-
+    def createTextPicture(cls, is_handwritten, text, font, text_color, skewing_angle, random_skew):
         ##########################
         # Create picture of text #
         ##########################
@@ -28,7 +27,11 @@ class FakeTextDataGenerator(object):
         random_angle = random.randint(0-skewing_angle, skewing_angle)
 
         rotated_img = image.rotate(skewing_angle if not random_skew else random_angle, expand=1)
+        
+        return rotated_img
 
+    @classmethod
+    def applyDistorsion(cls, rotated_img, distorsion_type, distorsion_orientation):
         #############################
         # Apply distorsion to image #
         #############################
@@ -52,12 +55,16 @@ class FakeTextDataGenerator(object):
                 vertical=(distorsion_orientation == 0 or distorsion_orientation == 2),
                 horizontal=(distorsion_orientation == 1 or distorsion_orientation == 2)
             )
+        
+        return distorted_img
 
-        new_text_width, new_text_height = distorted_img.size
-
+    @classmethod
+    def generateBackgroundImage(cls, distorted_img, background_type):
         #############################
         # Generate background image #
         #############################
+        new_text_width, new_text_height = distorted_img.size
+        
         if background_type == 0:
             background = BackgroundGenerator.gaussian_noise(new_text_height + 10, new_text_width + 10)
         elif background_type == 1:
@@ -68,21 +75,28 @@ class FakeTextDataGenerator(object):
             background = BackgroundGenerator.picture(new_text_height + 10, new_text_width + 10)
 
         mask = distorted_img.point(lambda x: 0 if x == 255 or x == 0 else 255, '1')
-
         background.paste(distorted_img, (5, 5), mask=mask)
+    
+        return background
 
+    @classmethod
+    def resizeImageFormat(cls, new_text_width, new_text_height, height, background, blur, random_blur):
         ##################################
         # Resize image to desired format #
         ##################################
         new_width = float(new_text_width + 10) * (float(height) / float(new_text_height + 10))
-        image_on_background = background.resize((int(new_width), height), Image.ANTIALIAS)
+        image_on_background = background.resize((int(new_text_width), height), Image.ANTIALIAS)
 
         final_image = image_on_background.filter(
             ImageFilter.GaussianBlur(
                 radius=(blur if not random_blur else random.randint(0, blur))
             )
         )
+        
+        return final_image
 
+    @classmethod
+    def generateImageName(cls, name_format, text, index, extension):
         #####################################
         # Generate name for resulting image #
         #####################################
@@ -95,6 +109,38 @@ class FakeTextDataGenerator(object):
         else:
             print('{} is not a valid name format. Using default.'.format(name_format))
             image_name = '{}_{}.{}'.format(text, str(index), extension)
+            
+        return image_name
+        
+    @classmethod
+    def generate(cls, index, text, font, out_dir, height, extension, skewing_angle, random_skew, blur, random_blur, background_type, distorsion_type, distorsion_orientation, is_handwritten, name_format, text_color=-1):
+        image = None
+
+        ##########################
+        # Create picture of text #
+        ##########################
+        rotated_img = FakeTextDataGenerator.createTextPicture(is_handwritten, text, font, text_color, skewing_angle, random_skew)
+
+        #############################
+        # Apply distorsion to image #
+        #############################
+        distorted_img = FakeTextDataGenerator.applyDistorsion(rotated_img, distorsion_type, distorsion_orientation)
+        new_text_width, new_text_height = distorted_img.size
+
+        #############################
+        # Generate background image #
+        #############################
+        background = FakeTextDataGenerator.generateBackgroundImage(distorted_img, background_type)
+
+        ##################################
+        # Resize image to desired format #
+        ##################################
+        final_image = FakeTextDataGenerator.resizeImageFormat(new_text_width, new_text_height, height, background, blur, random_blur)
+
+        #####################################
+        # Generate name for resulting image #
+        #####################################
+        image_name = FakeTextDataGenerator.generateImageName(name_format, text, index, extension)
 
         # Save the image
         final_image.convert('RGB').save(os.path.join(out_dir, image_name))
