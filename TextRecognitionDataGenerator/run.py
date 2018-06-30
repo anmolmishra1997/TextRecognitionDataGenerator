@@ -4,6 +4,7 @@ import random
 import re
 import requests
 import string
+import pickle
 
 from bs4 import BeautifulSoup
 from PIL import Image, ImageFont
@@ -217,21 +218,32 @@ def create_strings_from_file(length, allow_variable, count, filename):
     """
 
     strings = []
+    special_words = ['Acrylic', 'Cotton', 'Linen', 'Nylon', 'Polyester', 'Rayon', 'Wool']
+
 
     with open(filename, 'r', encoding="utf8") as f:
         lines = [l.strip()[0:200] for l in f.readlines()]
         file_len = len(lines)
         if file_len == 0:
             raise Exception("No lines could be read in file")
-        for _ in range(0, count):
-            current_string = ""
-            for _ in range(0, random.randint(1, length) if allow_variable else length):
-                current_string += lines[random.randrange(file_len)]
-                current_string += ' '
+        for _ in range(0, count): 
+            current_string = []
+            num_fabrics = random.randint(1, length)
+            num_remaining = length - num_fabrics
             
-#             current_string = []
-#             for _ in range(0, random.randint(1, length) if allow_variable else length):
-#                 current_string.append(lines[random.randrange(file_len)])
+            for _ in range(0, num_fabrics):
+                word_fabric = special_words[random.randrange(len(special_words))]
+                if random.random() > 0.5:
+                    word_fabric = word_fabric.upper()
+                current_string.append(word_fabric)
+            
+            for _ in range(num_fabrics, random.randint(1, length) if allow_variable else length):
+                word_nonfabric = lines[random.randrange(file_len)]
+                if random.random() > 0.95:
+                    word_nonfabric = word_nonfabric.upper()
+                current_string.append(word_nonfabric)
+            
+            random.shuffle(current_string)
             strings.append(current_string)
 
     return strings
@@ -331,6 +343,7 @@ def main():
     # Create the directory if it does not exist.
     try:
         os.makedirs(args.output_dir)
+        os.makedirs(args.output_dir[:-1] + '_bb_out')
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
@@ -385,10 +398,11 @@ def main():
 
     if args.name_format == 2:
         # Create file with filename-to-label connections
-        with open(os.path.join(args.output_dir, "labels.txt"), 'w', encoding="utf8") as f:
-            for i in range(string_count):
-                file_name = str(i) + "." + args.extension
-                f.write("{} {}\n".format(file_name, strings[i]))
+#         with open(os.path.join(args.output_dir, "labels.txt"), 'w', encoding="utf8") as f:
+        for i in range(string_count):
+            file_name = str(i) + "." + args.extension
+#             f.write("{} {}\n".format(file_name, strings[i]))
+            pickle.dump(strings[i], open(os.path.join(args.output_dir[:-1] + '_bb_out', file_name[:-4] + '_words.p'), 'wb'))
 
 if __name__ == '__main__':
     main()

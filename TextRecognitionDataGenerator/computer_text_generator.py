@@ -9,7 +9,7 @@ from PIL import Image, ImageFont, ImageDraw, ImageFilter
 class ComputerTextGenerator(object):
     @classmethod
     def generate(cls, text, font, text_color):
-        image_font = ImageFont.truetype(font=font, size=32)
+        image_font = ImageFont.truetype(font=font, size=random.randrange(15,25))
         text_width, text_height = image_font.getsize(text)
 
         txt_img = Image.new('L', (text_width, text_height), 255)

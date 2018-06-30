@@ -88,5 +88,6 @@ class BackgroundGenerator(object):
                     y + height,
                 )
             )
+#             return picture
         else:
             raise Exception('No images where found in the pictures folder!')
