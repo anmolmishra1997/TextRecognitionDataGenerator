@@ -209,6 +209,8 @@ def load_fonts(lang):
 
     if lang == 'cn':
         return [os.path.join('fonts/cn', font) for font in os.listdir('fonts/cn')]
+    elif lang == 'kr':
+        return [os.path.join('fonts/kr', font) for font in os.listdir('fonts/kr')]
     else:
         return [os.path.join('fonts/latin', font) for font in os.listdir('fonts/latin')]
 
@@ -218,7 +220,7 @@ def create_strings_from_file(length, allow_variable, count, filename):
     """
 
     strings = []
-    special_words = ['Acrylic', 'Cotton', 'Linen', 'Nylon', 'Polyester', 'Rayon', 'Wool']
+    special_words = ['아크릴', '면', '마', '나일론', '폴리에스터', '폴리우레탄', '레이온', '모']
 
 
     with open(filename, 'r', encoding="utf8") as f:
@@ -233,14 +235,14 @@ def create_strings_from_file(length, allow_variable, count, filename):
             
             for _ in range(0, num_fabrics):
                 word_fabric = special_words[random.randrange(len(special_words))]
-                if random.random() > 0.5:
-                    word_fabric = word_fabric.upper()
+#                 if random.random() > 0.5:
+#                     word_fabric = word_fabric.upper()
                 current_string.append(word_fabric)
             
             for _ in range(num_fabrics, random.randint(1, length) if allow_variable else length):
                 word_nonfabric = lines[random.randrange(file_len)]
-                if random.random() > 0.95:
-                    word_nonfabric = word_nonfabric.upper()
+#                 if random.random() > 0.95:
+#                     word_nonfabric = word_nonfabric.upper()
                 current_string.append(word_nonfabric)
             
             random.shuffle(current_string)
